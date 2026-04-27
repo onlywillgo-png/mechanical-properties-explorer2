@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Mechanical Properties Explorer</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            max-width: 600px;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        /* Search Input */
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 50px;
+            outline: none;
+            transition: var(--transition);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .search-hint {
+            display: block;
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Material Cards Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 900px;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 1.25rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid #f1f5f9;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+
+        .card h3 {
+            font-size: 1rem;
+            color: var(--primary);
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 550px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            transform: scale(0.95);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #ef4444;
+        }
+
+        .modal-title {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .modal-category {
+            font-size: 0.9rem;
+            color: #fff;
+            background: var(--text-muted);
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+        }
+
+        .prop-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .prop-item strong {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .prop-item span {
+            font-size: 1.1rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .modal-desc {
+            line-height: 1.6;
+            color: var(--text-muted);
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            margin-bottom: 1rem;
+        }
+        
+        .modal-footer-hint {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* Canvas */
+        canvas {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .disclaimer {
+            margin-top: 3rem;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .prop-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Material Mechanical Properties Explorer</h1>
+        <p class="subtitle">Search for a material to explore its mechanical properties and visualize its stress-strain curve.</p>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="e.g., Steel, Aluminum, Titanium..." autocomplete="off">
+            <span class="search-hint">Press <strong>Enter</strong> to view properties.</span>
+        </div>
+    </header>
+
+    <div class="grid" id="exampleCards">
+        </div>
+
+    <p class="disclaimer">* Values provided are approximate, generic averages intended strictly for educational use.</p>
+
+    <div class="modal-overlay" id="propsModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeAllModals()">×</span>
+            <h2 class="modal-title" id="mTitle">Material Name</h2>
+            <div class="modal-category" id="mCategory">Category</div>
+            
+            <div class="modal-desc" id="mDesc">Description goes here.</div>
+
+            <div class="prop-grid">
+                <div class="prop-item">
+                    <strong>Fracture Toughness</strong>
+                    <span id="mToughness">-</span>
+                </div>
+                <div class="prop-item">
+                    <strong>Tensile Strength</strong>
+                    <span id="mStrength">-</span>
+                </div>
+                <div class="prop-item">
+                    <strong>Young's Modulus</strong>
+                    <span id="mYoungs">-</span>
+                </div>
+                <div class="prop-item">
+                    <strong>Poisson's Ratio</strong>
+                    <span id="mPoisson">-</span>
+                </div>
+            </div>
+            <div class="modal-footer-hint">Press ENTER to view the Stress-Strain Curve ➔</div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="curveModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="modal-close" onclick="closeAllModals()">×</span>
+            <h2 class="modal-title" id="cTitle">Stress-Strain Curve</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Typical idealized behavior at room temperature.</p>
+            <canvas id="stressStrainCanvas" width="500" height="350"></canvas>
+            <div class="modal-footer-hint">Press ENTER to close ✕</div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="errorModal">
+        <div class="modal-content" style="text-align: center; max-width: 400px;">
+            <span class="modal-close" onclick="closeAllModals()">×</span>
+            <h2 class="modal-title" style="color: #ef4444;">Not Found</h2>
+            <p style="color: var(--text-muted); margin-top: 1rem;">Sorry, that material is not in our educational database yet. Try one of the example cards!</p>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Database of Materials ---
+        // 'curveType' dictates how the canvas draws the graph. 'ductile' implies a pronounced yield and plastic region. 'brittle' breaks at/near elastic limit.
+        const materials = {
+            "aluminum": {
+                name: "Aluminum", category: "Pure Metal / Alloy Base",
+                toughness: "20-30 MPa√m", tensile: "90-300 MPa",
+                youngs: "69 GPa", poisson: "0.33",
+                desc: "A lightweight, silvery-white metal known for its low density and high corrosion resistance. Highly ductile.",
+                curveType: "ductile"
+            },
+            "steel": {
+                name: "Steel", category: "Alloy",
+                toughness: "50-100 MPa√m", tensile: "400-550 MPa",
+                youngs: "200 GPa", poisson: "0.27 - 0.30",
+                desc: "An alloy of iron and carbon. Highly versatile with a distinct yield point and extensive plastic deformation region.",
+                curveType: "ductile_sharp_yield"
+            },
+            "copper": {
+                name: "Copper", category: "Pure Metal",
+                toughness: "50-70 MPa√m", tensile: "210-220 MPa",
+                youngs: "110 GPa", poisson: "0.34",
+                desc: "A soft, malleable, and ductile metal with very high thermal and electrical conductivity.",
+                curveType: "ductile"
+            },
+            "titanium": {
+                name: "Titanium", category: "Pure Metal / Alloy Base",
+                toughness: "40-80 MPa√m", tensile: "240-900 MPa",
+                youngs: "110 GPa", poisson: "0.32",
+                desc: "Known for its high strength-to-weight ratio and excellent corrosion resistance. Behaves in a strong, tough manner.",
+                curveType: "ductile"
+            },
+            "silicon carbide": {
+                name: "Silicon Carbide", category: "Ceramic",
+                toughness: "3-4 MPa√m", tensile: "300-500 MPa",
+                youngs: "410 GPa", poisson: "0.14",
+                desc: "A hard, brittle ceramic material used for abrasives and high-temperature environments.",
+                curveType: "brittle"
+            },
+            "brass": {
+                name: "Brass", category: "Alloy",
+                toughness: "40-60 MPa√m", tensile: "300-550 MPa",
+                youngs: "100-125 GPa", poisson: "0.34",
+                desc: "An alloy of copper and zinc. Very workable, ductile, and features acoustic properties useful for instruments.",
+                curveType: "ductile"
+            },
+            "glass": {
+                name: "Glass", category: "Amorphous Solid",
+                toughness: "0.7-1.2 MPa√m", tensile: "30-50 MPa",
+                youngs: "50-90 GPa", poisson: "0.20 - 0.27",
+                desc: "A typical brittle material. It undergoes almost purely elastic deformation before catastrophic fracture.",
+                curveType: "brittle"
+            },
+            "iron": {
+                name: "Iron", category: "Pure Metal",
+                toughness: "50-60 MPa√m", tensile: "200-250 MPa",
+                youngs: "211 GPa", poisson: "0.29",
+                desc: "The fundamental base of steel. Pure iron is relatively soft and ductile.",
+                curveType: "ductile"
+            },
+            "nickel": {
+                name: "Nickel", category: "Pure Metal",
+                toughness: "80-110 MPa√m", tensile: "310-380 MPa",
+                youngs: "200 GPa", poisson: "0.31",
+                desc: "A hard, silvery-white metal that is highly ductile and resistant to corrosion.",
+                curveType: "ductile"
+            },
+            "magnesium alloy": {
+                name: "Magnesium Alloy", category: "Alloy",
+                toughness: "15-20 MPa√m", tensile: "200-300 MPa",
+                youngs: "45 GPa", poisson: "0.35",
+                desc: "Exceptionally lightweight. While possessing decent strength, they are less ductile than aluminum.",
+                curveType: "ductile"
+            },
+            "carbon fiber composite": {
+                name: "Carbon Fiber Composite", category: "Composite",
+                toughness: "20-40 MPa√m", tensile: "600-1000+ MPa",
+                youngs: "130-150 GPa", poisson: "0.10 - 0.30",
+                desc: "Extremely high strength and stiffness along the fiber axis. Often fails abruptly without much plastic yielding.",
+                curveType: "brittle_high_strength"
+            }
+        };
+
+        // --- 2. Initialization & UI Setup ---
+        const inputField = document.getElementById('searchInput');
+        let currentMaterial = null;
+        let enterState = 0; 
+        // enterState 0 = nothing open
+        // enterState 1 = properties modal open
+        // enterState 2 = curve modal open
+
+        // Generate quick-link cards
+        const exampleCardsContainer = document.getElementById('exampleCards');
+        Object.keys(materials).forEach(key => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `<h3>${materials[key].name}</h3>`;
+            card.onclick = () => processSearch(key);
+            exampleCardsContainer.appendChild(card);
+        });
+
+        // --- 3. Interaction Logic (Enter-key Flow) ---
+        inputField.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleEnterPress();
+            }
+        });
+
+        // Global listener for subsequent Enter presses when input isn't focused
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && document.activeElement !== inputField) {
+                if (enterState > 0) {
+                    e.preventDefault();
+                    handleEnterPress();
+                }
+            }
+        });
+
+        function handleEnterPress() {
+            if (enterState === 0) {
+                // First Enter: Search and show properties
+                const query = inputField.value.trim().toLowerCase();
+                processSearch(query);
+            } else if (enterState === 1) {
+                // Second Enter: Close properties, open curve
+                document.getElementById('propsModal').classList.remove('active');
+                document.getElementById('curveModal').classList.add('active');
+                document.getElementById('cTitle').innerText = `${currentMaterial.name} Stress-Strain Curve`;
+                drawCurve(currentMaterial.curveType);
+                enterState = 2;
+            } else if (enterState === 2) {
+                // Third Enter: Close everything and reset
+                closeAllModals();
+            }
+        }
+
+        function processSearch(query) {
+            currentMaterial = materials[query];
+            if (currentMaterial) {
+                // Populate Modal 1
+                document.getElementById('mTitle').innerText = currentMaterial.name;
+                document.getElementById('mCategory').innerText = currentMaterial.category;
+                document.getElementById('mDesc').innerText = currentMaterial.desc;
+                document.getElementById('mToughness').innerText = currentMaterial.toughness;
+                document.getElementById('mStrength').innerText = currentMaterial.tensile;
+                document.getElementById('mYoungs').innerText = currentMaterial.youngs;
+                document.getElementById('mPoisson').innerText = currentMaterial.poisson;
+                
+                closeAllModals(); // ensure clean state
+                document.getElementById('propsModal').classList.add('active');
+                enterState = 1;
+                inputField.value = currentMaterial.name;
+                inputField.blur();
+            } else {
+                // Show Error
+                if(query !== "") {
+                    closeAllModals();
+                    document.getElementById('errorModal').classList.add('active');
+                    // Reset state so pressing enter inside error modal doesn't trigger curve
+                    enterState = 0; 
+                }
+            }
+        }
+
+        function closeAllModals() {
+            document.querySelectorAll('.modal-overlay').forEach(el => el.classList.remove('active'));
+            enterState = 0;
+            inputField.focus();
+        }
+
+        // --- 4. Canvas Drawing Logic ---
+        function drawCurve(type) {
+            const canvas = document.getElementById('stressStrainCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            const width = canvas.width;
+            const height = canvas.height;
+            const padLeft = 60;
+            const padBottom = 50;
+            const padTop = 30;
+            const padRight = 30;
+
+            const graphW = width - padLeft - padRight;
+            const graphH = height - padTop - padBottom;
+
+            // Clear Canvas
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw Axes
+            ctx.beginPath();
+            ctx.strokeStyle = "#0f172a";
+            ctx.lineWidth = 2;
+            ctx.moveTo(padLeft, padTop);
+            ctx.lineTo(padLeft, height - padBottom); // Y axis
+            ctx.lineTo(width - padRight, height - padBottom); // X axis
+            ctx.stroke();
+
+            // Axis Labels
+            ctx.font = "14px Inter, sans-serif";
+            ctx.fillStyle = "#0f172a";
+            ctx.textAlign = "center";
+            ctx.fillText("Strain (ε)", padLeft + graphW / 2, height - 15);
+            
+            ctx.save();
+            ctx.translate(20, padTop + graphH / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText("Stress (σ)", 0, 0);
+            ctx.restore();
+
+            // Drawing parameters based on idealized material type
+            let path = new Path2D();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#2563eb"; // primary blue
+
+            // Origin mapped
+            const orgX = padLeft;
+            const orgY = height - padBottom;
+
+            // Helper to map normalized [0,1] coordinates to canvas pixels
+            const pt = (nx, ny) => ({
+                x: orgX + nx * graphW,
+                y: orgY - ny * graphH
+            });
+
+            // Draw logic
+            if (type === "brittle" || type === "brittle_high_strength") {
+                // Linear elastic region followed by immediate fracture
+                let maxStress = type === "brittle_high_strength" ? 0.9 : 0.6;
+                let maxStrain = type === "brittle_high_strength" ? 0.3 : 0.2;
+                
+                let yieldPt = pt(maxStrain, maxStress);
+                path.moveTo(orgX, orgY);
+                path.lineTo(yieldPt.x, yieldPt.y); // Elastic
+                ctx.stroke(path);
+
+                // Labels
+                drawLabel(ctx, pt(maxStrain/2, maxStress/2), "Elastic Region", "right");
+                drawPointAndLabel(ctx, yieldPt, "Fracture Point", "top");
+
+            } else {
+                // Ductile types
+                let yieldStrain = 0.2;
+                let yieldStress = 0.5;
+                let utsStrain = 0.7;
+                let utsStress = 0.85;
+                let fracStrain = 0.9;
+                let fracStress = 0.75;
+
+                let start = pt(0,0);
+                let yieldP = pt(yieldStrain, yieldStress);
+                let utsP = pt(utsStrain, utsStress);
+                let fracP = pt(fracStrain, fracStress);
+
+                path.moveTo(start.x, start.y);
+
+                if (type === "ductile_sharp_yield") {
+                    // Simulating mild steel drop after yield
+                    let upperYield = pt(yieldStrain, yieldStress + 0.05);
+                    let lowerYield = pt(yieldStrain + 0.05, yieldStress - 0.05);
+                    path.lineTo(upperYield.x, upperYield.y); // Elastic
+                    path.lineTo(lowerYield.x, lowerYield.y); // Yield drop
+                    
+                    // Plastic Region to UTS
+                    path.quadraticCurveTo(utsP.x - 50, utsP.y, utsP.x, utsP.y);
+                    // Necking to Fracture
+                    path.quadraticCurveTo(fracP.x - 20, utsP.y, fracP.x, fracP.y);
+
+                    drawLabel(ctx, pt(0.1, 0.25), "Elastic", "right");
+                    drawPointAndLabel(ctx, upperYield, "Yield Point", "top");
+                    drawLabel(ctx, pt(0.4, 0.6), "Plastic Region", "bottom");
+
+                } else {
+                    // Standard ductile (smooth transition)
+                    path.lineTo(yieldP.x, yieldP.y); // Elastic
+                    
+                    // Bezier curve for strain hardening up to UTS
+                    path.bezierCurveTo(
+                        yieldP.x + 30, yieldP.y + 30, 
+                        utsP.x - 50, utsP.y, 
+                        utsP.x, utsP.y
+                    );
+                    
+                    // Curve down to fracture (necking)
+                    path.quadraticCurveTo(fracP.x - 10, utsP.y - 5, fracP.x, fracP.y);
+
+                    drawLabel(ctx, pt(yieldStrain/2, yieldStress/2), "Elastic", "right");
+                    drawPointAndLabel(ctx, yieldP, "Yield Point", "top");
+                    drawLabel(ctx, pt(0.45, 0.65), "Plastic Region", "bottom");
+                }
+
+                ctx.stroke(path);
+
+                // Common UTS and Fracture points for ductile materials
+                drawPointAndLabel(ctx, utsP, "Ultimate Tensile Strength", "top");
+                drawPointAndLabel(ctx, fracP, "Fracture", "right");
+            }
+        }
+
+        function drawPointAndLabel(ctx, point, text, position) {
+            // Draw red dot
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = "#ef4444";
+            ctx.fill();
+            
+            // Draw text
+            drawLabel(ctx, point, text, position);
+        }
+
+        function drawLabel(ctx, point, text, position) {
+            ctx.font = "12px Inter, sans-serif";
+            ctx.fillStyle = "#475569";
+            ctx.textAlign = "center";
+            
+            let offset = 15;
+            if (position === "top") {
+                ctx.fillText(text, point.x, point.y - offset);
+            } else if (position === "right") {
+                ctx.textAlign = "left";
+                ctx.fillText(text, point.x + offset - 5, point.y + 4);
+            } else if (position === "bottom") {
+                ctx.fillText(text, point.x, point.y + offset + 5);
+            }
+        }
+    </script>
+</body>
+</html>
